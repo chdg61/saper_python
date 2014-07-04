@@ -1,123 +1,107 @@
 # coding=utf-8
 import tkMessageBox
 import Tkinter
+from Saper.constants import *
 
-class MainGUI(Tkinter.Tk):
 
-    __width = 500
-    __height = 400
+class GUI(object, Tkinter.Tk):
+    is_grid = False
 
-    __sizeX = 9
-    __sizeY = 9
+    _time_begin = 1
+    """ начало с 1й секунды """
 
-    __isStructureEnable = False
+    _timer_id = False
+    """ ID интервала таймера """
 
-    TOOLBAR_HEIGHT = 50
-    MAIN_COLOR_BACKGROUND = "#DCDCDC"
-
-    # начало с 1й секунды
-    __timeBegin = 1
-
-    # ID интервала таймера
-    __timerId = False
-
-    def __init__(self,title = 'Saper',**args):
+    def __init__(self):
         Tkinter.Tk.__init__(self)
+        self.title(WINDOW_TITLE)
+        self.geometry("%sx%s" % (WINDOW_WIDTH, WINDOW_HEIGHT))
 
-        self.__listCeil = []
+        self.tk_frame_toolbar = Tkinter.Frame(self, width=WINDOW_WIDTH, height=WINDOW_TOOLBAR_HEIGHT, background="grey",
+                                              relief=Tkinter.GROOVE, border=2)
 
-        self.title(title)
+        self.tk_frame_main = Tkinter.Frame(self, width=WINDOW_WIDTH, height=(WINDOW_HEIGHT - WINDOW_TOOLBAR_HEIGHT),
+                                           background=WINDOW_MAIN_FRAME_COLOR_BACKGROUND, relief=Tkinter.GROOVE,
+                                           border=2)
 
-        if("width" in args):
-            self.__width = int(args['width'])
-        if("height" in args):
-            self.__height = int(args['height']) + self.TOOLBAR_HEIGHT
+        self.tk_label_timer = Tkinter.Label(self.tk_frame_toolbar, text="0000")
+        self.tk_label_timer.grid(row=0, column=0, sticky=Tkinter.NSEW)
 
-        self.geometry("%sx%s" % (self.__width,self.__height))
+        self.tk_label_button_new = Tkinter.Button(self.tk_frame_toolbar, text="NEW")
+        self.tk_label_button_new.grid(row=0, column=1, sticky=Tkinter.NSEW)
 
-        if("size" in args):
-            self.__sizeX = int(args['size'])
-            self.__sizeY = int(args['size'])
-        else:
-            if("sizeX" in args):
-                self.__sizeX = int(args['sizeX'])
-            if("sizeY" in args):
-                self.__sizeY = int(args['sizeY'])
+        self.tk_label_counter = Tkinter.Label(self.tk_frame_toolbar, text="00/00")
+        self.tk_label_counter.grid(row=0, column=2, sticky=Tkinter.NSEW)
 
-        self.__createFrame()
+    def show_all_count_mine(self):
+        """
+        Показываем общее число мин на панели
+        """
+        self.tk_label_counter['text'] = "00/%2d" % MINE_COUNT
 
-    def __createFrame(self):
-        self.frameToolBar = Tkinter.Frame(self,width = self.__width,height = self.TOOLBAR_HEIGHT, background = "grey",relief = Tkinter.GROOVE,border = 2)
-        self.frameMain = Tkinter.Frame(self,width = self.__width,height = self.__height - self.TOOLBAR_HEIGHT, background = self.MAIN_COLOR_BACKGROUND,relief = Tkinter.GROOVE,border = 2)
+    def show_selected_count_mine(self, selected_mine):
+        """
+        Показываем расставленное число мин на панели
+        :type selected_mine: int
+        """
+        self.tk_label_counter['text'] = "%2d/%2d" % (selected_mine, MINE_COUNT)
 
-        self.labeTimer = Tkinter.Label(self.frameToolBar,text = "0000")
-        self.labeTimer.grid(row = 0,column = 0,sticky='nsew')
-
-        self.labeButtonNew = Tkinter.Button(self.frameToolBar,text = "NEW")
-        self.labeButtonNew.grid(row = 0,column = 1,sticky='nsew')
-
-        self.labeCounter = Tkinter.Label(self.frameToolBar,text = "00/00")
-        self.labeCounter.grid(row = 0,column = 2,sticky='nsew')
-
-    def setAllCountMine(self,count_mine):
-        self.count_mine = count_mine
-        self.labeCounter['text'] = "00/%2d" % count_mine
-
-    def setSelectedCountMine(self,selected_mine):
-        self.labeCounter['text'] = "%2d/%2d" % (selected_mine,self.count_mine)
-
-    def __gridCeilFrame(self):
-        for x,listX in enumerate(self.__listCeil):
-            for y,listY in enumerate(listX):
-                listY['button'].grid()
-                listY['frame'].grid(row = int(y),column = int(x),padx =2, pady =2)
-
-    def timerStart(self):
+    def timer_start(self):
         """
         Включает таймер игры
-        :return:
         """
-        if self.__timerId == False and self.__timeBegin == 1:
-            self.__timer()
+        if not self._timer_id and self._time_begin == 1:
+            self.timer()
 
-    def timerStop(self):
+    def timer_stop(self):
         """
         Выключает таймер игры
-        :return:
         """
-        if self.__timerId !=  False:
-            self.labeTimer.after_cancel(self.__timerId)
-            self.__timerId = False
+        if self._timer_id:
+            self.tk_label_timer.after_cancel(self._timer_id)
+            self._timer_id = False
 
-
-    def __timer(self):
-        self.labeTimer['text'] = "%0004d" % self.__timeBegin
-        self.__timeBegin += 1
-        self.__timerId = self.labeTimer.after(1000, self.__timer)
+    def timer(self):
+        self.tk_label_timer['text'] = "%0004d" % self._time_begin
+        self._time_begin += 1
+        self._timer_id = self.tk_label_timer.after(1000, self.timer)
 
     def game_over(self):
-        self.timerStop()
-        tkMessageBox.showerror("Game Over", "Вы продули эту игру, поздравляю...")
+        """
+        Показываем окно с поражением
+        :return:
+        :rtype: bool
+        """
+        self.timer_stop()
+        tkMessageBox.showerror(GAME_OVER_WINDOW_TITLE, GAME_OVER_MESSAGE)
         return False
 
     def game_winner(self):
-        self.timerStop()
-        tkMessageBox.showinfo("WINNER", "Победа :)))")
+        """
+        Показываем окно с победой
+        :return:
+        :rtype: bool
+        """
+        self.timer_stop()
+        tkMessageBox.showinfo(WINNER_WINDOW_TITLE, WINNER_MESSAGE)
         return False
 
+    def grid(self):
+        super(GUI, self).grid()
+        self.tk_frame_toolbar.grid(row=0, column=0)
 
-    def structure(self):
-        self.frameToolBar.grid(row = 0, column = 0)
-        widthLableToolBar = (float(self.__width - self.TOOLBAR_HEIGHT))/2.0
-        self.frameToolBar.rowconfigure('all',minsize = self.TOOLBAR_HEIGHT)
-        self.frameToolBar.columnconfigure(0,minsize = widthLableToolBar - 5)
-        self.frameToolBar.columnconfigure(1,minsize = self.TOOLBAR_HEIGHT)
-        self.frameToolBar.columnconfigure(2,minsize = widthLableToolBar - 5)
-        self.frameMain.grid(row = 1, column = 0)
-        self.__isStructureEnable = True
+        self.tk_frame_toolbar.rowconfigure('all', minsize=WINDOW_TOOLBAR_HEIGHT)
+
+        width_label_toolbar = (float(WINDOW_WIDTH - WINDOW_TOOLBAR_HEIGHT)) / 2.0
+        self.tk_frame_toolbar.columnconfigure(0, minsize=width_label_toolbar - 5)
+        self.tk_frame_toolbar.columnconfigure(1, minsize=WINDOW_TOOLBAR_HEIGHT)
+        self.tk_frame_toolbar.columnconfigure(2, minsize=width_label_toolbar - 5)
+
+        self.tk_frame_main.grid(row=1, column=0)
+        self.is_grid = True
 
     def show(self):
-        if self.__isStructureEnable == False:
-            self.structure()
-
+        if not self.is_grid:
+            self.grid()
         self.mainloop()

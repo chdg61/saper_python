@@ -1,160 +1,101 @@
 # coding=utf-8
 import Tkinter
 import os
+from Saper.constants import *
+
 
 class Ceil(object):
     """
     Класс ячейки
     """
 
-    width = 35
-    """ :type: int """
+    number_in_row = 0
 
-    height = 35
-    """ :type: int """
-
-    padding = 1
-    """ :type: int """
-
-    __numberInRow = 0
-
-    __numberOnAllCeil = 0
+    number_in_all = 0
     """ Номер ячейки по порядку, среди всех ячеек """
 
-    __isMine = False
-    __isOpen = False
-    __numberMineAround = 0
-    __userSelectIsMine = False
-    __countMineAround = 0
-    __obRow = False
+    is_mine = False
+    is_open = False
 
-    __eventRightClick = None
-    __eventLeftClick = None
+    is_user_select_mine = False
+    """ Поставил ли пользователь сюда мину или нет """
 
-    def __init__(self,number_ceil_in_row):
-        self.__numberInRow = int(number_ceil_in_row)
+    count_mine_around = 0
+    """ кол-во мин вокруг ячейки """
 
-    def setMine(self,is_mine):
+    _row = None
+    """ :type: Saper.Row """
+
+    event_right_click = None
+    event_left_click = None
+
+    def __init__(self, number_in_row, tk_frame_parent):
         """
-        Задаём, что ячейка является миной
-        :param is_mine:
-        :return:
+        :param number_in_row: Номер в строке
+        :type number_in_row:  int
+        :param tk_frame_parent: Основной Frame Tkinter
+        :type tk_frame_parent:  Tkinter.Frame
         """
-        self.__isMine = type(is_mine) == bool and is_mine == True
+        self.number_in_row = int(number_in_row)
 
-    def isMine(self):
-        """
-        Проверка является ли ячейка миной
-        :return:
-        """
-        return self.__isMine
+        self.tk_frame = Tkinter.Frame(tk_frame_parent, width=SIZE_CEIL, height=SIZE_CEIL)
+        self.tk_button = Tkinter.Button(self.tk_frame)
+        self.tk_button.bind(EVENT_LEFT_CLICK, self.left_click)
+        self.tk_button.bind(EVENT_RIGHT_CLICK, self.right_click)
+        self.tk_label = Tkinter.Label(self.tk_frame)
 
-    def setRow(self,obRow):
+    @property
+    def row(self):
+        """
+        :rtype: Saper.Row
+        """
+        return self._row
+
+    @row.setter
+    def row(self, row):
         """
         Задаём строчку ячейки
-        :param obRow: Saper.row.Row
-        :return:
+        :type row: Saper.Row
         """
-        self.__obRow = obRow
+        self._row = row
 
-    def getRow(self):
-        """
-        :return:Saper.row.Row
-        """
-        return self.__obRow
+    def left_click(self, event):
+        if self.event_left_click:
+            self.event_left_click(self, event)
 
-    def setNumber(self, number_ceil):
-        """
-        Задать номер ячейки среди всех ячеек вообще
-        :param number_ceil:
-        :return:
-        """
-        self.__numberOnAllCeil = int(number_ceil)
+    def right_click(self, event):
+        if self.is_open:
+            return False
 
-    def getNumber(self):
-        return self.__numberOnAllCeil
-
-    def getNumberInRow(self):
-        """
-        Получить номер ячейки в строке
-        :return:
-        """
-        return self.__numberInRow
-
-    def open(self):
-        """
-        Открыть ячейку
-        :return:
-        """
-        self.__isOpen = True
-
-    def isOpen(self):
-        return self.__isOpen
-
-    def setUserSelectMine(self, is_mine):
-        """
-        Отметить что пользвоатель поставил сюда мину
-        :param is_mine:
-        :return:
-        """
-        if (type(self.__isOpen) == bool and self.__isOpen == False):
-            self.__userSelectIsMine = (type(is_mine) == bool and is_mine == True)
-
-    def isUserSelectMine(self):
-        """
-        Првоеряка поставил ли пользователь мину сюда или нет
-        :return:
-        """
-        return self.__userSelectIsMine
-
-    def setCountMineAround(self, count_mine):
-        """
-        Задаём кол-во мин в ячейки
-        :param count_mine:
-        :return:
-        """
-        self.__countMineAround = int(count_mine)
-
-    def getCountMineAround(self):
-        return self.__countMineAround
-
-    def setParentFrame(self, frame):
-        self.parentFrame = frame
-        self.frame = Tkinter.Frame(self.parentFrame,width = self.width,height = self.height)
-        self.button = Tkinter.Button(self.frame)
-        self.button.bind('<Button-1>', self.leftclick)
-        self.button.bind('<Button-3>', self.rightclick)
-        self.lable = Tkinter.Label(self.frame)
-
-    def leftclick(self,event):
-        if self.__eventLeftClick:
-            self.__eventLeftClick(self,event)
-
-    def rightclick(self,event):
-        if self.isOpen():
-            return  False
-
-        if self.__userSelectIsMine == False:
-            curDir = os.path.dirname(os.path.abspath(__file__))
-            flag_gif = curDir +  "/data/flag.gif"
-            self.flagImage = Tkinter.PhotoImage(file=flag_gif,width=19, height=19)
-            self.button.configure(image = self.flagImage,state = Tkinter.DISABLED,disabledforeground = "#00FF00")
-            self.__userSelectIsMine = True
+        if not self.is_user_select_mine:
+            self.tk_button.configure(image=self.get_image_flag(), state=Tkinter.DISABLED, disabledforeground="#00FF00")
+            self.is_user_select_mine = True
         else:
-            self.button.configure(image = "",state = Tkinter.NORMAL)
-            self.__userSelectIsMine = False
+            self.tk_button.configure(image="", state=Tkinter.NORMAL)
+            self.is_user_select_mine = False
 
-        if self.__eventRightClick:
-            self.__eventRightClick(self,event)
+        if self.event_right_click:
+            self.event_right_click(self, event)
 
-    def structure(self):
-        self.frame.grid(row = int(self.getRow().getNumber()),column = int(self.getNumberInRow()),padx = self.padding, pady = self.padding)
-        self.button.grid(sticky = Tkinter.NSEW)
-        self.frame.rowconfigure('all', minsize = self.height)
-        self.frame.columnconfigure('all', minsize = self.width)
+    @classmethod
+    def get_image_flag(cls):
+        try:
+            return cls.tk_image_flag
+        except:
+            current_directory = os.path.dirname(os.path.abspath(__file__))
+            flag_gif = current_directory + "/data/flag.gif"
+            cls.tk_image_flag = Tkinter.PhotoImage(file=flag_gif, width=19, height=19)
+            return cls.tk_image_flag
 
-    def bind(self,event,function):
-        if(event == "<Button-3>"):
-            self.__eventRightClick = function
-        elif (event == "<Button-1>"):
-            self.__eventLeftClick = function
+    def grid(self):
+        self.tk_frame.grid(row=int(self.row.number_row), column=int(self.number_in_row), padx=PADDING_BETWEEN_CEIL,
+                           pady=PADDING_BETWEEN_CEIL)
+        self.tk_button.grid(sticky=Tkinter.NSEW)
+        self.tk_frame.rowconfigure('all', minsize=SIZE_CEIL)
+        self.tk_frame.columnconfigure('all', minsize=SIZE_CEIL)
+
+    def bind(self, event, function):
+        if event == EVENT_RIGHT_CLICK:
+            self.event_right_click = function
+        elif event == EVENT_LEFT_CLICK:
+            self.event_left_click = function
